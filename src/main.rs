@@ -1,14 +1,13 @@
 use std::io::{self, Write};
 
-use Sunder::message::{PromptArgs, talk_to_model};
-use clap::Parser;
+use Sunder::message::{Message, PromptArgs, talk_to_model};
 
 #[tokio::main]
 async fn main() {
-    let mut history: Vec<String> = vec![];
+    let mut history: Vec<Message> = vec![];
     loop {
         print!("> ");
-        io::stdout().flush();
+        let _ = io::stdout().flush();
 
         let mut input = String::new();
         let _ = io::stdin().read_line(&mut input);
@@ -19,6 +18,5 @@ async fn main() {
             break;
         }
         let _ = talk_to_model("http://localhost:11434", input.to_string(), &mut history).await;
-        // println!();
     }
 }

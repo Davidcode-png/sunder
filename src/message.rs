@@ -5,32 +5,39 @@ use reqwest::Error;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-pub enum Message {}
+// pub enum Message {}
 
 #[derive(Debug, Parser)]
 pub struct PromptArgs {
     pub chat: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Parser)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PostMessage {
     model: String,
-    prompt: String,
+    messages: Vec<Message>,
     stream: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Message {
+    role: String,
+    content: String,
 }
 
 pub async fn talk_to_model(
     base_url: &str,
     prompt: String,
-    history: &mut Vec<String>,
+    history: &mut Vec<Message>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let post_url = format!("{base_url}/api/generate");
-
-    let value = format!("{}\n{}", history.join("\n"), prompt);
-
+    let post_url = format!("{base_url}/api/chat");
+    history.push(Message {
+        role: "user".to_string(),
+        content: prompt,
+    });
     let new_mesesage = PostMessage {
         model: "qwen2.5:3b".to_string(),
-        prompt: value,
+        messages: history.clone(),
         stream: true,
     };
     let client = reqwest::Client::new();
@@ -51,7 +58,7 @@ pub async fn talk_to_model(
                 continue;
             }
             let response_body: Value = serde_json::from_str(line)?;
-            if let Some(text) = response_body["response"].as_str() {
+            if let Some(text) = response_body["message"]["content"].as_str() {
                 print!("{}", text);
                 use std::io::{self, Write};
                 io::stdout().flush()?;
@@ -62,7 +69,9 @@ pub async fn talk_to_model(
     }
     println!();
 
-    history.push(prompt);
-    history.push(full_response);
+    history.push(Message {
+        role: "assistant".to_string(),
+        content: full_response,
+    });
     Ok(())
 }
