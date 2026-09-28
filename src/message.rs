@@ -1,15 +1,26 @@
 use clap::Parser;
 use futures_util::StreamExt;
 use reqwest;
-use reqwest::Error;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-// pub enum Message {}
 
 #[derive(Debug, Parser)]
 pub struct PromptArgs {
     pub chat: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+struct FunctionDefinition {
+    name: String,
+    description: String,
+    parameters: Value,
+}
+
+#[derive(Debug, Serialize, Clone)]
+struct ToolDefinition {
+    r#type: String,
+    function: FunctionDefinition,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -17,6 +28,18 @@ pub struct PostMessage {
     model: String,
     messages: Vec<Message>,
     stream: bool,
+    // tools: Vec<ToolDefinition>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct ToolCall {
+    function: FunctionCall,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct FunctionCall {
+    name: String,
+    arguments: Value,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -24,6 +47,7 @@ pub struct Message {
     role: String,
     content: String,
 }
+
 
 pub async fn talk_to_model(
     base_url: &str,
